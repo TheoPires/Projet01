@@ -4,6 +4,7 @@
 #include "GridManager.h"
 
 #include "Engine/StaticMeshActor.h"
+#include "PlaceableObject/PlaceableActor.h"
 
 // Sets default values
 AGridManager::AGridManager()
@@ -32,17 +33,41 @@ void AGridManager::BeginPlay()
 	float PlaneHeight = PlaneExtent.Y * 2.0f;
 	UE_LOG(LogTemp, Warning, TEXT("Plane dimensions: %.2f x %.2f"), PlaneWidth, PlaneHeight);
 
-	float NbHorizontalCells = PlaneWidth / CellSize;
-	float NbVerticalCells = PlaneHeight / CellSize;
-	UE_LOG(LogTemp, Warning, TEXT("NbHorizontalCells | NbVerticalCells: %.2f x %.2f"), NbHorizontalCells, NbVerticalCells);
+	int NbHorizontalCells = FMath::FloorToInt(PlaneWidth / CellSize);
+	int NbVerticalCells = FMath::FloorToInt(PlaneHeight / CellSize);
+	UE_LOG(LogTemp, Warning, TEXT("NbHorizontalCells | NbVerticalCells: %.2d x %.2d"), NbHorizontalCells, NbVerticalCells);
 	
 	Grid.SetNum(NbVerticalCells);
 	for (int i = 0; i < NbVerticalCells; i++)
 	{
 		Grid[i].SetNum(NbHorizontalCells);
 	}
-
+	
 	ShowGrid();
+
+	for (int i = 0; i < 10; i++)
+	{
+		TObjectPtr<APlaceableActor> PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
+		int32 PlaceX = FMath::Rand() % NbVerticalCells;
+		int32 PlaceY = FMath::Rand() % NbHorizontalCells;;
+		UE_LOG(LogTemp, Warning, TEXT("PlaceX: %d | PlaceY: %d"), PlaceX, PlaceY);
+		
+		if (CanPlace(PlaceX, PlaceY, 1, 1))
+		{
+			TObjectPtr<APlaceableActor> PlaceableActor2 = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
+			if (i == 2)
+			{
+				PlaceableActor2->UpdateRectangle(2, 1);
+			}
+			PlaceObject(PlaceX, PlaceY, PlaceableActor2);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("CanPlace failed for PlaceX %d PlaceY %d"), PlaceX, PlaceY);
+		}
+	}
+	
+
 }
 
 // Called every frame
@@ -69,3 +94,65 @@ void AGridManager::ShowGrid()
 	}
 }
 
+FVector AGridManager::GridToWorld(int32 X, int32 Y)
+{
+	FVector BottomLeft = PlaneOrigin - PlaneExtent;
+
+	FVector result = BottomLeft + FVector(
+			(X + 0.5f) * CellSize,
+			(Y + 0.5f) * CellSize,
+			100.f
+		);
+	
+	DrawDebugSphere(GetWorld(), result, 10.0f, 12, FColor::Yellow, true, 1.0f, 5.0f, 2.0f);
+	
+	return result;
+}
+
+bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth, const int32 ActorHeight)
+{
+	for (int i = 0; i < ActorWidth; i++)
+	{
+		for (int j = 0; j < ActorHeight; j++)
+		{
+			int CheckX = X + i;
+			int CheckY = Y + j;
+
+			if (!Grid.IsValidIndex(CheckY) || !Grid[CheckY].IsValidIndex(CheckX))
+				return false;
+
+			if (Grid[CheckY][CheckX].bOccupied)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor)
+{
+	int32 ActorWidth = Actor->Width;
+	int32 ActorHeight = Actor->Height;
+	
+	for (int i = 0; i < ActorWidth; i++)
+	{
+		for (int j = 0; j < ActorHeight; j++)
+		{
+			Grid[Y + j][X + i].bOccupied = true;
+			Grid[Y + j][X + i].OccupyingActor = Actor;
+		}
+	}
+
+	FVector WorldPos = GridToWorld(X, Y);
+
+	FVector Offset = FVector(
+		(ActorWidth - 1) * CellSize * 0.5f,
+		(ActorHeight - 1) * CellSize * 0.5f,
+		0.f
+	);
+
+	FVector FinalPos = WorldPos + Offset;
+
+	Actor->SetActorLocation(FinalPos);
+	// Actor->SetActorLocation(WorldPos);
+}

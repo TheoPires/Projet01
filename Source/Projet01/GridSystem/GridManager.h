@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PlaceableObject/PlaceableActor.h"
 #include "GridManager.generated.h"
 
 USTRUCT()
@@ -12,6 +13,8 @@ struct FGridCell
 	GENERATED_BODY()
 
 	bool bOccupied = false;
+	UPROPERTY()
+	TObjectPtr<AActor> OccupyingActor;
 };
 
 UCLASS()
@@ -35,6 +38,11 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<AStaticMeshActor> PlaneMesh = nullptr;
+
+	FVector GridToWorld(int32 X, int32 Y);
+
+	bool CanPlace(int32 X, int32 Y, int32 ActorWidth, int32 ActorHeight);
+	void PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor);
 
 	float CellSize = 100.0f;
 	
