@@ -33,9 +33,11 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	void CreateGridMesh();
 
 	void ShowGrid();
-	
+	void HideGrid();
+
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<AStaticMeshActor> PlaneMesh = nullptr;
 
@@ -51,4 +53,10 @@ public:
 	FVector PlaneExtent;
 
 	TArray<TArray<FGridCell>> Grid;
+	
+	UPROPERTY()
+	class UInstancedStaticMeshComponent* VerticalLinesComponent;
+    
+	UPROPERTY()
+	class UInstancedStaticMeshComponent* HorizontalLinesComponent;
 };

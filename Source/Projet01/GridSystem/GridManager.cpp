@@ -3,6 +3,7 @@
 
 #include "GridManager.h"
 
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "PlaceableObject/PlaceableActor.h"
 
@@ -42,8 +43,11 @@ void AGridManager::BeginPlay()
 	{
 		Grid[i].SetNum(NbHorizontalCells);
 	}
-	
+
+	CreateGridMesh();
 	ShowGrid();
+	
+	// ShowGrid();
 
 	for (int i = 0; i < 10; i++)
 	{
@@ -57,7 +61,7 @@ void AGridManager::BeginPlay()
 			TObjectPtr<APlaceableActor> PlaceableActor2 = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
 			if (i == 2)
 			{
-				PlaceableActor2->UpdateRectangle(2, 1);
+				PlaceableActor2->UpdateRectangle(1, 7);
 			}
 			PlaceObject(PlaceX, PlaceY, PlaceableActor2);
 		}
@@ -77,36 +81,98 @@ void AGridManager::Tick(float DeltaTime)
 
 }
 
+void AGridManager::CreateGridMesh()
+{
+    VerticalLinesComponent = NewObject<UInstancedStaticMeshComponent>(this);
+    VerticalLinesComponent->RegisterComponent();
+    VerticalLinesComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    
+    HorizontalLinesComponent = NewObject<UInstancedStaticMeshComponent>(this);
+    HorizontalLinesComponent->RegisterComponent();
+    HorizontalLinesComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    
+	UStaticMesh *mt2 = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
+    
+    if (mt2)
+    {
+        VerticalLinesComponent->SetStaticMesh(mt2);
+        HorizontalLinesComponent->SetStaticMesh(mt2);
+        
+    	UMaterial *LineMat2 = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial")));
+        if (LineMat2)
+        {
+            VerticalLinesComponent->SetMaterial(0, LineMat2);
+            HorizontalLinesComponent->SetMaterial(0, LineMat2);
+        }
+    }
+}
+
 void AGridManager::ShowGrid()
 {
-	FVector CornerPointReference = PlaneOrigin + PlaneExtent;
+    if (!VerticalLinesComponent ||
+    	!HorizontalLinesComponent)
+    {
+        return;
+    }
+    
+    VerticalLinesComponent->ClearInstances();
+    HorizontalLinesComponent->ClearInstances();
+    
+    FVector CornerPointReference = PlaneOrigin + PlaneExtent;
+    float LineThickness = 0.01f;
+    
+    // LIGNES VERTICALES (parallèles à l'axe Y)
+    int32 VerticalLineCount = FMath::RoundToInt(PlaneExtent.Y * 2.0f / CellSize);
+    for (int i = 0; i <= VerticalLineCount; i++)
+    {
+        FVector LineStart = CornerPointReference - FVector(0.0f, CellSize, 0.0f) * i;
+        FVector LineEnd = LineStart - FVector::ForwardVector * PlaneExtent.X * 2;
+        FVector LineCenter = (LineStart + LineEnd) * 0.5f;
+        
+        FTransform LineTransform;
+        LineTransform.SetLocation(LineCenter);
+        LineTransform.SetScale3D(FVector(30.0f, 0.1f, LineThickness));
+        
+        VerticalLinesComponent->AddInstance(LineTransform, true);
+    }
+    
+    // LIGNES HORIZONTALES (parallèles à l'axe X)
+    int32 HorizontalLineCount = FMath::RoundToInt(PlaneExtent.X * 2.0f / CellSize);
+    for (int i = 0; i <= HorizontalLineCount; i++)
+    {
+        FVector HorizontalLineStart = CornerPointReference - FVector(CellSize, 0.0f, 0.0f) * i;
+        FVector LineEnd = HorizontalLineStart - FVector::RightVector * PlaneExtent.Y * 2;
+        FVector LineCenter = (HorizontalLineStart + LineEnd) * 0.5f;
+        
+        FTransform LineTransform;
+        LineTransform.SetLocation(LineCenter);
+        LineTransform.SetRotation(FRotator(.0f, 90.0f, .0f).Quaternion());
+        LineTransform.SetScale3D(FVector(35.0f, .1f, LineThickness));
+        
+        HorizontalLinesComponent->AddInstance(LineTransform);
+    }
+}
 
-	for (int i = 0; i < PlaneExtent.Y * 2.0f / CellSize ; i++)
-	{
-		DrawDebugLine(GetWorld(), CornerPointReference - FVector(0.0f, CellSize, .0f) * i,-1 * FVector(0.0f, CellSize, .0f) * i + CornerPointReference - FVector::ForwardVector * PlaneExtent.X * 2, FColor::Red, true, 1.0f, 5, 2.0f);
-	}
-
-	for (int i = 0; i < PlaneExtent.X * 2.0f / CellSize ; i++)
-	{
-		FVector HorizontalLineStart = CornerPointReference - FVector(CellSize, .0f, .0f) * i;
-		FVector LineEnd = HorizontalLineStart + -1 * FVector::RightVector * PlaneExtent.Y * 2;
-		DrawDebugLine(GetWorld(), HorizontalLineStart, LineEnd , FColor::Red, true, 1.0f, 5, 2.0f);
-	}
+void AGridManager::HideGrid()
+{
+    if (VerticalLinesComponent)
+    {
+        VerticalLinesComponent->ClearInstances();
+    }
+    if (HorizontalLinesComponent)
+    {
+        HorizontalLinesComponent->ClearInstances();
+    }
 }
 
 FVector AGridManager::GridToWorld(int32 X, int32 Y)
 {
 	FVector BottomLeft = PlaneOrigin - PlaneExtent;
-
-	FVector result = BottomLeft + FVector(
+	
+	return BottomLeft + FVector(
 			(X + 0.5f) * CellSize,
 			(Y + 0.5f) * CellSize,
-			100.f
-		);
-	
-	DrawDebugSphere(GetWorld(), result, 10.0f, 12, FColor::Yellow, true, 1.0f, 5.0f, 2.0f);
-	
-	return result;
+			100.f);
 }
 
 bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth, const int32 ActorHeight)
@@ -154,5 +220,4 @@ void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActo
 	FVector FinalPos = WorldPos + Offset;
 
 	Actor->SetActorLocation(FinalPos);
-	// Actor->SetActorLocation(WorldPos);
 }
