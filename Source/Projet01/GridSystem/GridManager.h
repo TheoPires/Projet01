@@ -35,18 +35,20 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	void CreateGridMesh();
 
-	void ShowGrid();
+	void ShowGrid() const;
 	void HideGrid();
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<AStaticMeshActor> PlaneMesh = nullptr;
 
 	FVector GridToWorld(int32 X, int32 Y);
 
 	bool CanPlace(int32 X, int32 Y, int32 ActorWidth, int32 ActorHeight);
 	void PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor);
 
+	UPROPERTY(EditAnywhere, Category = "Setup")
 	float CellSize = 100.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Setup")
+	float LineThickness = 0.01f;
 	
 	FVector PlaneOrigin;
 
@@ -54,9 +56,18 @@ public:
 
 	TArray<TArray<FGridCell>> Grid;
 	
+	UPROPERTY(EditAnywhere, Category = "Setup")
+	TObjectPtr<AStaticMeshActor> PlaneMesh = nullptr;
+	
 	UPROPERTY()
-	class UInstancedStaticMeshComponent* VerticalLinesComponent;
+	TObjectPtr<UInstancedStaticMeshComponent> VerticalLinesComponent;
     
 	UPROPERTY()
-	class UInstancedStaticMeshComponent* HorizontalLinesComponent;
+	TObjectPtr<UInstancedStaticMeshComponent> HorizontalLinesComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Setup")
+	TObjectPtr<UStaticMesh> GridStaticMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "Setup")
+	TObjectPtr<UMaterial> GridMaterial = nullptr;
 };

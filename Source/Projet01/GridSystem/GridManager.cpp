@@ -91,23 +91,20 @@ void AGridManager::CreateGridMesh()
     HorizontalLinesComponent->RegisterComponent();
     HorizontalLinesComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     
-	UStaticMesh *mt2 = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, TEXT("/Engine/BasicShapes/Cube.Cube")));
-    
-    if (mt2)
+    if (GridStaticMesh)
     {
-        VerticalLinesComponent->SetStaticMesh(mt2);
-        HorizontalLinesComponent->SetStaticMesh(mt2);
+        VerticalLinesComponent->SetStaticMesh(GridStaticMesh);
+        HorizontalLinesComponent->SetStaticMesh(GridStaticMesh);
         
-    	UMaterial *LineMat2 = Cast<UMaterial>(StaticLoadObject(UMaterial::StaticClass(), nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial")));
-        if (LineMat2)
+        if (GridMaterial)
         {
-            VerticalLinesComponent->SetMaterial(0, LineMat2);
-            HorizontalLinesComponent->SetMaterial(0, LineMat2);
+            VerticalLinesComponent->SetMaterial(0, GridMaterial);
+            HorizontalLinesComponent->SetMaterial(0, GridMaterial);
         }
     }
 }
 
-void AGridManager::ShowGrid()
+void AGridManager::ShowGrid() const
 {
     if (!VerticalLinesComponent ||
     	!HorizontalLinesComponent)
@@ -119,9 +116,10 @@ void AGridManager::ShowGrid()
     HorizontalLinesComponent->ClearInstances();
     
     FVector CornerPointReference = PlaneOrigin + PlaneExtent;
-    float LineThickness = 0.01f;
-    
-    // LIGNES VERTICALES (parallèles à l'axe Y)
+
+	FBox Box = GridStaticMesh->GetBoundingBox();
+	
+    // VERTICAL LINES (parallel to the Y-axis)
     int32 VerticalLineCount = FMath::RoundToInt(PlaneExtent.Y * 2.0f / CellSize);
     for (int i = 0; i <= VerticalLineCount; i++)
     {
@@ -131,12 +129,12 @@ void AGridManager::ShowGrid()
         
         FTransform LineTransform;
         LineTransform.SetLocation(LineCenter);
-        LineTransform.SetScale3D(FVector(30.0f, 0.1f, LineThickness));
+        LineTransform.SetScale3D(FVector(PlaneExtent.X / Box.GetExtent().X, LineThickness, LineThickness));
         
         VerticalLinesComponent->AddInstance(LineTransform, true);
     }
-    
-    // LIGNES HORIZONTALES (parallèles à l'axe X)
+	
+    // HORIZONTAL LINES (parallel to the X-axis)
     int32 HorizontalLineCount = FMath::RoundToInt(PlaneExtent.X * 2.0f / CellSize);
     for (int i = 0; i <= HorizontalLineCount; i++)
     {
@@ -147,7 +145,7 @@ void AGridManager::ShowGrid()
         FTransform LineTransform;
         LineTransform.SetLocation(LineCenter);
         LineTransform.SetRotation(FRotator(.0f, 90.0f, .0f).Quaternion());
-        LineTransform.SetScale3D(FVector(35.0f, .1f, LineThickness));
+        LineTransform.SetScale3D(FVector(PlaneExtent.Y / Box.GetExtent().Y, LineThickness, LineThickness));
         
         HorizontalLinesComponent->AddInstance(LineTransform);
     }
