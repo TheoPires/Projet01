@@ -55,6 +55,10 @@ public:
 	FVector PlaneExtent;
 
 	TArray<TArray<FGridCell>> Grid;
+
+	int NbHorizontalCells = 0;
+
+	int NbVerticalCells = 0;
 	
 	UPROPERTY(EditAnywhere, Category = "Setup")
 	TObjectPtr<AStaticMeshActor> PlaneMesh = nullptr;

@@ -34,8 +34,8 @@ void AGridManager::BeginPlay()
 	float PlaneHeight = PlaneExtent.Y * 2.0f;
 	UE_LOG(LogTemp, Warning, TEXT("Plane dimensions: %.2f x %.2f"), PlaneWidth, PlaneHeight);
 
-	int NbHorizontalCells = FMath::FloorToInt(PlaneWidth / CellSize);
-	int NbVerticalCells = FMath::FloorToInt(PlaneHeight / CellSize);
+	NbHorizontalCells = FMath::FloorToInt(PlaneWidth / CellSize);
+	NbVerticalCells = FMath::FloorToInt(PlaneHeight / CellSize);
 	UE_LOG(LogTemp, Warning, TEXT("NbHorizontalCells | NbVerticalCells: %.2d x %.2d"), NbHorizontalCells, NbVerticalCells);
 	
 	Grid.SetNum(NbVerticalCells);
@@ -46,28 +46,23 @@ void AGridManager::BeginPlay()
 
 	CreateGridMesh();
 	ShowGrid();
-	
-	// ShowGrid();
 
 	for (int i = 0; i < 10; i++)
 	{
-		TObjectPtr<APlaceableActor> PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
-		int32 PlaceX = FMath::Rand() % NbVerticalCells;
-		int32 PlaceY = FMath::Rand() % NbHorizontalCells;;
+		int32 PlaceX = FMath::RandRange(0,  NbHorizontalCells - 1);
+		int32 PlaceY = FMath::RandRange(0,  NbVerticalCells - 1);
 		UE_LOG(LogTemp, Warning, TEXT("PlaceX: %d | PlaceY: %d"), PlaceX, PlaceY);
-		
-		if (CanPlace(PlaceX, PlaceY, 1, 1))
+
+		TObjectPtr<APlaceableActor> PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
+		PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4));
+		if (CanPlace(PlaceX, PlaceY, PlaceableActor->Width, PlaceableActor->Height))
 		{
-			TObjectPtr<APlaceableActor> PlaceableActor2 = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
-			if (i == 2)
-			{
-				PlaceableActor2->UpdateRectangle(1, 7);
-			}
-			PlaceObject(PlaceX, PlaceY, PlaceableActor2);
+			PlaceObject(PlaceX, PlaceY, PlaceableActor);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("CanPlace failed for PlaceX %d PlaceY %d"), PlaceX, PlaceY);
+			PlaceableActor->Destroy();
 		}
 	}
 	
@@ -202,8 +197,11 @@ void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActo
 	{
 		for (int j = 0; j < ActorHeight; j++)
 		{
-			Grid[Y + j][X + i].bOccupied = true;
-			Grid[Y + j][X + i].OccupyingActor = Actor;
+			if (Y + j <= NbVerticalCells && X + i <= NbHorizontalCells)
+			{
+				Grid[Y + j][X + i].bOccupied = true;
+				Grid[Y + j][X + i].OccupyingActor = Actor;
+			}
 		}
 	}
 
