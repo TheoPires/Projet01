@@ -45,7 +45,7 @@ void AGridManager::BeginPlay()
 	}
 
 	CreateGridMesh();
-	ShowGrid();
+	// ShowGrid();
 
 	for (int i = 0; i < 10; i++)
 	{

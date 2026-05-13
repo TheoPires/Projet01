@@ -35,7 +35,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	void CreateGridMesh();
 
+	UFUNCTION(BlueprintCallable)
 	void ShowGrid() const;
+	UFUNCTION(BlueprintCallable)
 	void HideGrid();
 
 
