@@ -27,7 +27,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	void UpdateRectangle(float NewWidth, float NewHeight);
+	void UpdateRectangle(float NewWidth, float NewHeight, float GridCellSize = 100.0f);
 
 	UPROPERTY(EditAnywhere)
 	int32 Width;

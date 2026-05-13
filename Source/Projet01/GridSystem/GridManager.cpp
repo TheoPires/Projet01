@@ -54,7 +54,7 @@ void AGridManager::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("PlaceX: %d | PlaceY: %d"), PlaceX, PlaceY);
 
 		TObjectPtr<APlaceableActor> PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
-		PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4));
+		PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4), CellSize);
 		if (CanPlace(PlaceX, PlaceY, PlaceableActor->Width, PlaceableActor->Height))
 		{
 			PlaceObject(PlaceX, PlaceY, PlaceableActor);

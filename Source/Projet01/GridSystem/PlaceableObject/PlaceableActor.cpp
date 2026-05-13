@@ -64,19 +64,24 @@ void APlaceableActor::Tick(float DeltaTime)
 
 }
 
-void APlaceableActor::UpdateRectangle(float NewWidth, float NewHeight)
+void APlaceableActor::UpdateRectangle(float NewWidth, float NewHeight, float GridCellSize)
 {
 	if (NewWidth > 0.0f && NewHeight > 0.0f && MeshComponent)
 	{
 		Width = NewWidth;
 		Height = NewHeight;
- 
-		// Scale du cube : le cube par défaut fait 200x200x200 unités
-		// On veut : Width en X, Height en Y, 1 cm en Z
-		float ScaleX = Width;
-		float ScaleY = Height;
-		float ScaleZ = 1.0f;  // 1 unité = 100 cm, donc 1 cm = 0.01 unité
- 
-		MeshComponent->SetRelativeScale3D(FVector(ScaleX, ScaleY, ScaleZ));
+
+		// Mesh size of unreal default cube
+		constexpr float BaseMeshSize = 100.0f;
+
+		// Taille cible en unités Unreal
+		const float TargetWidth = Width * GridCellSize;
+		const float TargetHeight = Height * GridCellSize;
+
+		// Scale relatif
+		const float ScaleX = TargetWidth / BaseMeshSize;
+		const float ScaleY = TargetHeight / BaseMeshSize;
+
+		MeshComponent->SetRelativeScale3D(FVector(ScaleX, ScaleY, 1.0f));
 	}
 }
