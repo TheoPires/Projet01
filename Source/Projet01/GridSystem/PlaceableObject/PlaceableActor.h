@@ -35,6 +35,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	int32 Height;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComponent = nullptr;
 };
