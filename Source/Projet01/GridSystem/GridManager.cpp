@@ -190,8 +190,8 @@ bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth
 
 void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor)
 {
-	int32 ActorWidth = Actor->Width;
-	int32 ActorHeight = Actor->Height;
+	const int32 ActorWidth = Actor->Width;
+	const int32 ActorHeight = Actor->Height;
 	
 	for (int i = 0; i < ActorWidth; i++)
 	{
@@ -205,15 +205,15 @@ void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActo
 		}
 	}
 
-	FVector WorldPos = GridToWorld(X, Y);
+	const FVector WorldPos = GridToWorld(X, Y);
 
-	FVector Offset = FVector(
+	const FVector Offset = FVector(
 		(ActorWidth - 1) * CellSize * 0.5f,
 		(ActorHeight - 1) * CellSize * 0.5f,
 		0.f
 	);
 
-	FVector FinalPos = WorldPos + Offset;
+	const FVector FinalPos = WorldPos + Offset;
 
-	Actor->SetActorLocation(FinalPos);
+	Actor->SetActorLocation(FinalPos);	
 }

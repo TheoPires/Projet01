@@ -27,6 +27,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable)
 	void UpdateRectangle(float NewWidth, float NewHeight, float GridCellSize = 100.0f);
 
 	UPROPERTY(EditAnywhere)
@@ -35,6 +37,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	int32 Height;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> MeshComponent = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="UI")
+	TObjectPtr<UTexture2D> Icon = nullptr;
 };
