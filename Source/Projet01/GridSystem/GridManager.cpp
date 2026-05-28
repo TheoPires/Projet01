@@ -53,7 +53,7 @@ void AGridManager::BeginPlay()
 		int32 PlaceY = FMath::RandRange(0,  NbVerticalCells - 1);
 		UE_LOG(LogTemp, Warning, TEXT("PlaceX: %d | PlaceY: %d"), PlaceX, PlaceY);
 
-		TObjectPtr<APlaceableActor> PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
+		APlaceableActor* PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
 		PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4), CellSize);
 		if (CanPlace(PlaceX, PlaceY, PlaceableActor->Width, PlaceableActor->Height))
 		{
@@ -158,7 +158,7 @@ void AGridManager::HideGrid()
     }
 }
 
-FVector AGridManager::GridToWorld(int32 X, int32 Y)
+FVector AGridManager::GridToWorld(const int32 X, const int32 Y) const
 {
 	FVector BottomLeft = PlaneOrigin - PlaneExtent;
 	
@@ -166,6 +166,17 @@ FVector AGridManager::GridToWorld(int32 X, int32 Y)
 			(X + 0.5f) * CellSize,
 			(Y + 0.5f) * CellSize,
 			100.f);
+}
+
+FIntPoint AGridManager::WorldToGrid(const FVector& WorldPosition) const
+{
+	FVector BottomLeft = PlaneOrigin - PlaneExtent;
+	FVector RelativePos = WorldPosition - BottomLeft;
+    
+	int32 X = FMath::FloorToInt(RelativePos.X / CellSize - 0.5f);
+	int32 Y = FMath::FloorToInt(RelativePos.Y / CellSize - 0.5f);
+    
+	return FIntPoint(X, Y);
 }
 
 bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth, const int32 ActorHeight)
@@ -188,7 +199,7 @@ bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth
 	return true;
 }
 
-void AGridManager::PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor)
+void AGridManager::PlaceObject(const int32 X, const int32 Y, APlaceableActor* Actor)
 {
 	const int32 ActorWidth = Actor->Width;
 	const int32 ActorHeight = Actor->Height;

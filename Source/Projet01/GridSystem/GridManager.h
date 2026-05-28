@@ -41,10 +41,16 @@ public:
 	void HideGrid();
 
 
-	FVector GridToWorld(int32 X, int32 Y);
+	FVector GridToWorld(int32 X, int32 Y) const;
 
+	UFUNCTION(BlueprintCallable)
+	FIntPoint WorldToGrid(const FVector& WorldPosition) const;
+
+	UFUNCTION(BlueprintCallable)
 	bool CanPlace(int32 X, int32 Y, int32 ActorWidth, int32 ActorHeight);
-	void PlaceObject(int32 X, int32 Y, const TObjectPtr<APlaceableActor>& Actor);
+
+	UFUNCTION(BlueprintCallable)
+	void PlaceObject(int32 X, int32 Y, APlaceableActor* Actor);
 
 	UPROPERTY(EditAnywhere, Category = "Setup")
 	float CellSize = 100.0f;
