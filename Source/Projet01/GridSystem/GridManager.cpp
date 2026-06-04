@@ -160,7 +160,7 @@ void AGridManager::HideGrid()
 
 FVector AGridManager::GridToWorld(const int32 X, const int32 Y) const
 {
-	FVector BottomLeft = PlaneOrigin - PlaneExtent;
+	const FVector BottomLeft = PlaneOrigin - PlaneExtent;
 	
 	return BottomLeft + FVector(
 			(X + 0.5f) * CellSize,
@@ -170,11 +170,11 @@ FVector AGridManager::GridToWorld(const int32 X, const int32 Y) const
 
 FIntPoint AGridManager::WorldToGrid(const FVector& WorldPosition) const
 {
-	FVector BottomLeft = PlaneOrigin - PlaneExtent;
-	FVector RelativePos = WorldPosition - BottomLeft;
-    
-	int32 X = FMath::FloorToInt(RelativePos.X / CellSize - 0.5f);
-	int32 Y = FMath::FloorToInt(RelativePos.Y / CellSize - 0.5f);
+	const FVector BottomLeft = PlaneOrigin - PlaneExtent;
+	const FVector RelativePos = WorldPosition - BottomLeft;
+
+	const int32 X = FMath::FloorToInt(RelativePos.X / CellSize);
+	const int32 Y = FMath::FloorToInt(RelativePos.Y / CellSize);
     
 	return FIntPoint(X, Y);
 }
@@ -185,8 +185,8 @@ bool AGridManager::CanPlace(const int32 X, const int32 Y, const int32 ActorWidth
 	{
 		for (int j = 0; j < ActorHeight; j++)
 		{
-			int CheckX = X + i;
-			int CheckY = Y + j;
+			const int CheckX = X + i;
+			const int CheckY = Y + j;
 
 			if (!Grid.IsValidIndex(CheckY) || !Grid[CheckY].IsValidIndex(CheckX))
 				return false;
