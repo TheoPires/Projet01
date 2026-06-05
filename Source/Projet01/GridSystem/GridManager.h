@@ -52,7 +52,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void PlaceObject(int32 X, int32 Y, APlaceableActor* Actor);
 
-	UPROPERTY(EditAnywhere, Category = "Setup")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setup")
 	float CellSize = 100.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Setup")
@@ -82,4 +82,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Setup")
 	TObjectPtr<UMaterial> GridMaterial = nullptr;
+
+	// Will be used for Artist to be able to test their asset easily
+	UPROPERTY(EditAnywhere, Category = "Testing")
+	TSubclassOf<APlaceableActor> PlaceableActorTest = nullptr;
 };
