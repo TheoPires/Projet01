@@ -64,7 +64,7 @@ void APlaceableActor::Tick(float DeltaTime)
 
 }
 
-void APlaceableActor::UpdateRectangle(float NewWidth, float NewHeight, float GridCellSize)
+void APlaceableActor::UpdateRectangle(const float NewWidth, const float NewHeight, const float GridCellSize)
 {
 	if (NewWidth > 0.0f && NewHeight > 0.0f && MeshComponent)
 	{
@@ -82,6 +82,6 @@ void APlaceableActor::UpdateRectangle(float NewWidth, float NewHeight, float Gri
 		const float ScaleX = TargetWidth / BaseMeshSize;
 		const float ScaleY = TargetHeight / BaseMeshSize;
 
-		MeshComponent->SetRelativeScale3D(FVector(ScaleX, ScaleY, 1.0f));
+		MeshComponent->SetRelativeScale3D(FVector(ScaleX, ScaleY, GridCellSize/BaseMeshSize));
 	}
 }

@@ -52,9 +52,10 @@ void AGridManager::BeginPlay()
 		int32 PlaceX = FMath::RandRange(0,  NbHorizontalCells - 1);
 		int32 PlaceY = FMath::RandRange(0,  NbVerticalCells - 1);
 		UE_LOG(LogTemp, Warning, TEXT("PlaceX: %d | PlaceY: %d"), PlaceX, PlaceY);
-
+		
 		APlaceableActor* PlaceableActor = GetWorld()->SpawnActor<APlaceableActor>(FVector(0.f,0.f,0.f), FRotator::ZeroRotator);
-		PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4), CellSize);
+		// PlaceableActor->UpdateRectangle(FMath::RandRange(1,  4), FMath::RandRange(1,  4), CellSize);
+		PlaceableActor->UpdateRectangle(PlaceableActor->Width, PlaceableActor->Height, CellSize);
 		if (CanPlace(PlaceX, PlaceY, PlaceableActor->Width, PlaceableActor->Height))
 		{
 			PlaceObject(PlaceX, PlaceY, PlaceableActor);
@@ -165,7 +166,7 @@ FVector AGridManager::GridToWorld(const int32 X, const int32 Y) const
 	return BottomLeft + FVector(
 			(X + 0.5f) * CellSize,
 			(Y + 0.5f) * CellSize,
-			100.f);
+			PlaneOrigin.Z + PlaneExtent.Z);
 }
 
 FIntPoint AGridManager::WorldToGrid(const FVector& WorldPosition) const
