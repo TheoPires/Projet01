@@ -3,7 +3,6 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Intersection/ContainmentQueries3.h"
 
 AGridManager::AGridManager()
 {
@@ -122,7 +121,7 @@ FIntPoint AGridManager::WorldToCell(const FVector& WorldPos) const
     const int32 X = FMath::FloorToInt(LocalPos.X / CellSize);
     const int32 Y = FMath::FloorToInt(LocalPos.Y / CellSize);
     const FIntPoint Cell = FIntPoint(X, Y);
-    if (IsValidCell(Cell))
+    if (!IsValidCell(Cell))
     {
         return FIntPoint(-1, -1);
     }
@@ -154,18 +153,26 @@ TArray<FIntPoint> AGridManager::GetOccupiedCells(AActor* Actor, const FIntPoint&
     FVector Origin, Extent;
     Actor->GetActorBounds(false, Origin, Extent);
 
-    // Number of cells occupied in X and Y from the bounding box
-    int32 SizeX = FMath::Max(1, FMath::RoundToInt((Extent.X * 2.f) / CellSize));
-    int32 SizeY = FMath::Max(1, FMath::RoundToInt((Extent.Y * 2.f) / CellSize));
-
-    for (int32 DX = 0; DX < SizeX; DX++)
+    FVector LeftBottomCorner = Origin - Extent;
+    FIntPoint MinCell = WorldToCell(LeftBottomCorner);
+    FVector RightBottomCorner = LeftBottomCorner + FVector::RightVector * Extent * 2.0f;
+    FIntPoint MaxCell = WorldToCell(RightBottomCorner + FVector::ForwardVector * Extent * 2.0f);
+    
+    for (int32 X = MinCell.X; X <= MaxCell.X; X++)
     {
-        for (int32 DY = 0; DY < SizeY; DY++)
+        for (int32 Y = MinCell.Y; Y <= MaxCell.Y; Y++)
         {
-            Cells.Add(FIntPoint(OriginCell.X + DX, OriginCell.Y + DY));
+            if (IsValidCell(FIntPoint(X, Y)))
+                Cells.Add(FIntPoint(X, Y));
         }
     }
-
+    
+    // for (FIntPoint Cell : Cells)
+    // {
+    //     FVector Location = CellToWorld(Cell);
+    //     DrawDebugSphere(GetWorld(), Location, 5.0f, 30, FColor::Red, false);
+    // }
+    
     return Cells;
 }
 
@@ -178,11 +185,26 @@ bool AGridManager::IsValidCell(const FIntPoint& Cell) const
 bool AGridManager::CanPlaceActor(AActor* Actor, const FIntPoint& OriginCell) const
 {
     TArray<FIntPoint> Cells = GetOccupiedCells(Actor, OriginCell);
+    if (Cells.IsEmpty())
+    {
+        return false;
+    }
+    
     for (const FIntPoint& Cell : Cells)
     {
-        if (!IsValidCell(Cell) || Grid[Cell.X][Cell.Y].bOccupied)
+        if (!IsValidCell(Cell))
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, "Invalid Cell");
             return false;
+        }
+
+        if (Grid[Cell.X][Cell.Y].bOccupied)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Cell X : %d Y : %d"), Cell.X, Cell.Y));
+            return false;
+        }
     }
+
     return true;
 }
 
@@ -190,6 +212,7 @@ bool AGridManager::TryPlaceActor(AActor* Actor, const FIntPoint& OriginCell)
 {
     if (!CanPlaceActor(Actor, OriginCell))
     {
+        UE_LOG(LogTemp, Error, TEXT("Can't place Actor"));
         return false;
     }
     
@@ -198,8 +221,10 @@ bool AGridManager::TryPlaceActor(AActor* Actor, const FIntPoint& OriginCell)
     {
         Grid[Cell.X][Cell.Y].bOccupied = true;
         Grid[Cell.X][Cell.Y].OccupyingActor = Actor;
+        FVector Location = CellToWorld(Cell);
+        DrawDebugSphere(GetWorld(), Location, 5.0f, 30, FColor::Red, false, 10.f);
     }
-
+    
     // Snap on grid
     FVector SnappedPos = CellToWorld(OriginCell);
     SnappedPos.Z = Actor->GetActorLocation().Z;

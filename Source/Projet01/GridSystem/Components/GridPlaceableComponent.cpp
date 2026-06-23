@@ -30,6 +30,16 @@ void UGridPlaceableComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 	FVector Snapped = GridManager->SnapToGrid(WorldPos);
 	GetOwner()->SetActorLocation(Snapped);
+	DrawDebugSphere(GetWorld(), Snapped, 5, 30, FColor::Red, false, .1, 2, 1); 
+
+	if (GridManager->CanPlaceActor(GetOwner(), Cell))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("UGridPlaceableComponent::TickComponent - Valid place actor")));
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Red, FString::Printf(TEXT("UGridPlaceableComponent::TickComponent - NOT Valid place actor")));
+	}
 }
 
 bool UGridPlaceableComponent::GetMouseGridPosition(FVector& OutPos) const
@@ -50,14 +60,14 @@ bool UGridPlaceableComponent::GetMouseGridPosition(FVector& OutPos) const
 		ViewportPosition
 		);
 
-	UE_LOG(LogTemp, Warning, TEXT("LastScreen: %s | Pixel: %s | Viewport: %s"),
-		*LastScreenPosition.ToString(),
-		*PixelPosition.ToString(),
-		*ViewportPosition.ToString());
+	// UE_LOG(LogTemp, Warning, TEXT("LastScreen: %s | Pixel: %s | Viewport: %s"),
+	// 	*LastScreenPosition.ToString(),
+	// 	*PixelPosition.ToString(),
+	// 	*ViewportPosition.ToString());
 	
 	FVector Origin, Direction;
 	// "Deprojects" from the screen position provided by the widget
-	UE_LOG(LogTemp, Warning, TEXT("Deproject with : %s"), *LastScreenPosition.ToString());
+	// UE_LOG(LogTemp, Warning, TEXT("Deproject with : %s"), *LastScreenPosition.ToString());
 	UGameplayStatics::DeprojectScreenToWorld(
 		PC,
 		PixelPosition,
@@ -120,7 +130,7 @@ void UGridPlaceableComponent::UpdateScreenPosition(const FVector2D ScreenPositio
 		return;
 	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("UpdateAbsolutePosition reçoit : %s"), *ScreenPosition.ToString());
+	// UE_LOG(LogTemp, Warning, TEXT("UpdateAbsolutePosition reçoit : %s"), *ScreenPosition.ToString());
 	
 	LastScreenPosition = ScreenPosition;
 	bHasScreenPosition = true;
