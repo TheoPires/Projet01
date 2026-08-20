@@ -14,6 +14,13 @@ class UInputAction;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+UENUM()
+enum class EPlayerMode : uint8
+{
+	Normal,
+	Build
+};
+
 UCLASS()
 class AProjet01PlayerController : public APlayerController
 {
@@ -32,7 +39,11 @@ public:
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	UInputMappingContext* DefaultMappingContext;
+	UInputMappingContext* PlayerMappingContext;
+
+	/** MappingContext */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UInputMappingContext* BuildMappingContext;
 	
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
@@ -41,6 +52,9 @@ public:
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* SetDestinationTouchAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UInputAction* PlaceObjectAction;
 
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
@@ -58,11 +72,18 @@ protected:
 	void OnTouchTriggered();
 	void OnTouchReleased();
 
+	UFUNCTION(BlueprintCallable)
+	void EnterBuildMode();
+	UFUNCTION(BlueprintCallable)
+	void ExitBuildMode();
+
 private:
 	FVector CachedDestination;
 
 	bool bIsTouch; // Is it a touch device
 	float FollowTime; // For how long it has been pressed
+
+	EPlayerMode CurrentMode = EPlayerMode::Normal;
 };
 
 

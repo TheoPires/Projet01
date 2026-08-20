@@ -1,71 +1,249 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "GridManager.h"
 
-#include "Engine/StaticMeshActor.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
-// Sets default values
 AGridManager::AGridManager()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = false;
+
+    USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+    RootComponent = Root;
+
+    VerticalLinesComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("VerticalLines"));
+    VerticalLinesComponent->SetupAttachment(RootComponent);
+    VerticalLinesComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    HorizontalLinesComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("HorizontalLines"));
+    HorizontalLinesComponent->SetupAttachment(RootComponent);
+    HorizontalLinesComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-// Called when the game starts or when spawned
 void AGridManager::BeginPlay()
 {
-	Super::BeginPlay();
-
-	if (PlaneMesh == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Plane Mesh should not be NULL"));
-		return;
-	}
-
-	PlaneMesh->GetActorBounds(false,PlaneOrigin, PlaneExtent);
-
-	UE_LOG(LogTemp, Warning, TEXT("Plane location: %s"), *PlaneOrigin.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Plane extent: %s"), *PlaneExtent.ToString());
-
-	float PlaneWidth = PlaneExtent.X * 2.0f;
-	float PlaneHeight = PlaneExtent.Y * 2.0f;
-	UE_LOG(LogTemp, Warning, TEXT("Plane dimensions: %.2f x %.2f"), PlaneWidth, PlaneHeight);
-
-	float NbHorizontalCells = PlaneWidth / CellSize;
-	float NbVerticalCells = PlaneHeight / CellSize;
-	UE_LOG(LogTemp, Warning, TEXT("NbHorizontalCells | NbVerticalCells: %.2f x %.2f"), NbHorizontalCells, NbVerticalCells);
-	
-	Grid.SetNum(NbVerticalCells);
-	for (int i = 0; i < NbVerticalCells; i++)
-	{
-		Grid[i].SetNum(NbHorizontalCells);
-	}
-
-	ShowGrid();
+    Super::BeginPlay();
+    InitGrid();
 }
 
-// Called every frame
-void AGridManager::Tick(float DeltaTime)
+void AGridManager::OnConstruction(const FTransform& Transform)
 {
-	Super::Tick(DeltaTime);
+    Super::OnConstruction(Transform);
+    InitGrid();
+    ShowGrid();
+    // HideGrid();
+}
 
+void AGridManager::InitGrid()
+{
+    Grid.SetNum(GridWidth);
+    for (int32 X = 0; X < GridWidth; X++)
+    {
+        Grid[X].SetNum(GridHeight);
+        for (int32 Y = 0; Y < GridHeight; Y++)
+        {
+            Grid[X][Y] = FGridCell();
+        }
+    }
+}
+
+void AGridManager::CreateGridMesh() const
+{
+    if (!GridStaticMesh) return;
+
+    VerticalLinesComponent->SetStaticMesh(GridStaticMesh);
+    HorizontalLinesComponent->SetStaticMesh(GridStaticMesh);
+
+    if (GridMaterial)
+    {
+        VerticalLinesComponent->SetMaterial(0, GridMaterial);
+        HorizontalLinesComponent->SetMaterial(0, GridMaterial);
+    }
 }
 
 void AGridManager::ShowGrid()
 {
-	FVector CornerPointReference = PlaneOrigin + PlaneExtent;
+    if (!VerticalLinesComponent || !HorizontalLinesComponent || !GridStaticMesh) return;
 
-	for (int i = 0; i < PlaneExtent.Y * 2.0f / CellSize ; i++)
-	{
-		DrawDebugLine(GetWorld(), CornerPointReference - FVector(0.0f, CellSize, .0f) * i,-1 * FVector(0.0f, CellSize, .0f) * i + CornerPointReference - FVector::ForwardVector * PlaneExtent.X * 2, FColor::Red, true, 1.0f, 5, 2.0f);
-	}
+    VerticalLinesComponent->ClearInstances();
+    HorizontalLinesComponent->ClearInstances();
 
-	for (int i = 0; i < PlaneExtent.X * 2.0f / CellSize ; i++)
-	{
-		FVector HorizontalLineStart = CornerPointReference - FVector(CellSize, .0f, .0f) * i;
-		FVector LineEnd = HorizontalLineStart + -1 * FVector::RightVector * PlaneExtent.Y * 2;
-		DrawDebugLine(GetWorld(), HorizontalLineStart, LineEnd , FColor::Red, true, 1.0f, 5, 2.0f);
-	}
+    CreateGridMesh();
+
+    const FBox Box = GridStaticMesh->GetBoundingBox();
+    const FVector GridOrigin = GetActorLocation();
+    const float TotalWidth  = GridWidth  * CellSize; // X axis
+    const float TotalHeight = GridHeight * CellSize; // Y axis
+
+    // Vertical lines (along the X axis, spaced on Y)
+    for (int32 i = 0; i <= GridHeight; i++)
+    {
+        FVector Start  = GridOrigin + FVector(0.f,        i * CellSize, 0.f);
+        FVector End    = GridOrigin + FVector(TotalWidth,  i * CellSize, 0.f);
+        FVector Center = (Start + End) * 0.5f;
+
+        FTransform T;
+        T.SetLocation(Center);
+        // No rotation: the line is already aligned with the X axis
+        T.SetScale3D(FVector(TotalWidth / (Box.GetExtent().X * 2.f), LineThickness, LineThickness));
+
+        VerticalLinesComponent->AddInstance(T, true);
+    }
+
+    // Horizontal lines (along the Y axis, spaced on X)
+    for (int32 i = 0; i <= GridWidth; i++)
+    {
+        FVector Start  = GridOrigin + FVector(i * CellSize, 0.f,         0.f);
+        FVector End    = GridOrigin + FVector(i * CellSize, TotalHeight,  0.f);
+        FVector Center = (Start + End) * 0.5f;
+
+        FTransform T;
+        T.SetLocation(Center);
+        T.SetRotation(FRotator(0.f, 90.f, 0.f).Quaternion()); // Rotates around the Y axis
+        T.SetScale3D(FVector(TotalHeight / (Box.GetExtent().X * 2.f), LineThickness, LineThickness));
+
+        HorizontalLinesComponent->AddInstance(T, true);
+    }
 }
 
+void AGridManager::HideGrid()
+{
+    if (VerticalLinesComponent)
+        VerticalLinesComponent->ClearInstances();
+
+    if (HorizontalLinesComponent)
+        HorizontalLinesComponent->ClearInstances();
+}
+
+FIntPoint AGridManager::WorldToCell(const FVector& WorldPos) const
+{
+    const FVector LocalPos = WorldPos - GetActorLocation();
+    const int32 X = FMath::FloorToInt(LocalPos.X / CellSize);
+    const int32 Y = FMath::FloorToInt(LocalPos.Y / CellSize);
+    const FIntPoint Cell = FIntPoint(X, Y);
+    if (!IsValidCell(Cell))
+    {
+        return FIntPoint(-1, -1);
+    }
+    return Cell;
+}
+
+FVector AGridManager::CellToWorld(const FIntPoint& Cell) const
+{
+    return GetActorLocation() + FVector(
+        Cell.X * CellSize + CellSize * 0.5f,
+        Cell.Y * CellSize + CellSize * 0.5f,
+        0.f
+    );
+}
+
+FVector AGridManager::SnapToGrid(const FVector& WorldPos) const
+{
+    FIntPoint Cell = WorldToCell(WorldPos);
+    FVector Snapped = CellToWorld(Cell);
+    Snapped.Z = WorldPos.Z; // Keep the original height
+    return Snapped;
+}
+
+TArray<FIntPoint> AGridManager::GetOccupiedCells(AActor* Actor, const FIntPoint& OriginCell) const
+{
+    TArray<FIntPoint> Cells;
+    if (!Actor) return Cells;
+
+    FVector Origin, Extent;
+    Actor->GetActorBounds(false, Origin, Extent);
+
+    FVector LeftBottomCorner = Origin - Extent;
+    FIntPoint MinCell = WorldToCell(LeftBottomCorner);
+    FVector RightBottomCorner = LeftBottomCorner + FVector::RightVector * Extent * 2.0f;
+    FIntPoint MaxCell = WorldToCell(RightBottomCorner + FVector::ForwardVector * Extent * 2.0f);
+    
+    for (int32 X = MinCell.X; X <= MaxCell.X; X++)
+    {
+        for (int32 Y = MinCell.Y; Y <= MaxCell.Y; Y++)
+        {
+            if (IsValidCell(FIntPoint(X, Y)))
+                Cells.Add(FIntPoint(X, Y));
+        }
+    }
+    
+    // for (FIntPoint Cell : Cells)
+    // {
+    //     FVector Location = CellToWorld(Cell);
+    //     DrawDebugSphere(GetWorld(), Location, 5.0f, 30, FColor::Red, false);
+    // }
+    
+    return Cells;
+}
+
+bool AGridManager::IsValidCell(const FIntPoint& Cell) const
+{
+    return Cell.X >= 0 && Cell.X < GridWidth
+        && Cell.Y >= 0 && Cell.Y < GridHeight;
+}
+
+bool AGridManager::CanPlaceActor(AActor* Actor, const FIntPoint& OriginCell) const
+{
+    TArray<FIntPoint> Cells = GetOccupiedCells(Actor, OriginCell);
+    if (Cells.IsEmpty())
+    {
+        return false;
+    }
+    
+    for (const FIntPoint& Cell : Cells)
+    {
+        if (!IsValidCell(Cell))
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, "Invalid Cell");
+            return false;
+        }
+
+        if (Grid[Cell.X][Cell.Y].bOccupied)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, FString::Printf(TEXT("Cell X : %d Y : %d"), Cell.X, Cell.Y));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool AGridManager::TryPlaceActor(AActor* Actor, const FIntPoint& OriginCell)
+{
+    if (!CanPlaceActor(Actor, OriginCell))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Can't place Actor"));
+        return false;
+    }
+    
+    TArray<FIntPoint> Cells = GetOccupiedCells(Actor, OriginCell);
+    for (const FIntPoint& Cell : Cells)
+    {
+        Grid[Cell.X][Cell.Y].bOccupied = true;
+        Grid[Cell.X][Cell.Y].OccupyingActor = Actor;
+        FVector Location = CellToWorld(Cell);
+        DrawDebugSphere(GetWorld(), Location, 5.0f, 30, FColor::Red, false, 10.f);
+    }
+    
+    // Snap on grid
+    FVector SnappedPos = CellToWorld(OriginCell);
+    SnappedPos.Z = Actor->GetActorLocation().Z;
+    Actor->SetActorLocation(SnappedPos);
+
+    return true;
+}
+
+void AGridManager::RemoveActor(AActor* Actor)
+{
+    for (int32 X = 0; X < GridWidth; X++)
+    {
+        for (int32 Y = 0; Y < GridHeight; Y++)
+        {
+            if (Grid[X][Y].OccupyingActor == Actor)
+            {
+                Grid[X][Y].bOccupied = false;
+                Grid[X][Y].OccupyingActor = nullptr;
+            }
+        }
+    }
+}

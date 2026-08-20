@@ -36,7 +36,7 @@ void AProjet01PlayerController::SetupInputComponent()
 	// Add Input Mapping Context
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
-		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		Subsystem->AddMappingContext(PlayerMappingContext, 0);
 	}
 
 	// Set up action bindings
@@ -122,4 +122,39 @@ void AProjet01PlayerController::OnTouchReleased()
 {
 	bIsTouch = false;
 	OnSetDestinationReleased();
+}
+
+void AProjet01PlayerController::EnterBuildMode()
+{
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Enter BuildMode"));
+	}
+	
+	CurrentMode = EPlayerMode::Build;
+	
+	UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+
+	if (Subsystem)
+	{
+		Subsystem->RemoveMappingContext(PlayerMappingContext);
+
+		Subsystem->AddMappingContext(BuildMappingContext, 0);
+	}
+}
+
+void AProjet01PlayerController::ExitBuildMode()
+{
+	CurrentMode = EPlayerMode::Normal;
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer());
+
+	if (Subsystem)
+	{
+		Subsystem->RemoveMappingContext(BuildMappingContext);
+
+		Subsystem->AddMappingContext(PlayerMappingContext, 0);
+	}
 }
